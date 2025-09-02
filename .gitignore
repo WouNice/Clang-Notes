@@ -1,0 +1,68 @@
+*.idea
+cmake-build-debug/
+*.recycle
+target/
+Untitled Folder
+
+Untitled*
+formater*.py
+
+*.jar
+*.war
+*.rar
+
+# Eclipse temp file
+.metadata/
+.classpath
+.class
+.project
+.settings/
+.pydevproject
+.springBeans
+
+# Intelij temp file
+*.iml
+*.ipr
+*.iws
+
+# Compiled Object files
+*.slo
+*.lo
+*.o
+*.obj
+*.ko
+
+# Precompiled Headers
+*.gch
+*.pch
+
+# Compiled Dynamic libraries
+*.so
+*.so.*
+*.dylib
+*.dll
+
+# Fortran module files
+*.mod
+
+# Compiled Static libraries
+*.lai
+*.la
+*.a
+*.lib
+
+# Executables
+*.exe
+*.out
+*.app
+
+# MicroSoft Office Temp file
+~*
+*.db
+
+# hiden files
+**/.svn/
+*.checkstyle
+
+*.versionsBackup
+*.orig
