@@ -12,8 +12,8 @@
 
 ```python
 -l[basic library] # 编译时指定要使用的基础库，样例：-lpthread，针对Posix线程共享库进行编译
--L[shared-library path]      # 共享库的路径添加到搜索的范围，路径为包含xxx.dll/xxx.so/xxx.dlyb文件的目录
--I[include header-file path]          # 将头文件的路径添加到搜索的范围，路径为包含xxx.h/xxx.hpp文件的目录
+-L[shared-library path] # 共享库的路径添加到搜索的范围，路径为包含xxx.dll/xxx.so/xxx.dlyb文件的目录
+-I[include header-file path] # 将头文件的路径添加到搜索的范围，路径为包含xxx.h/xxx.hpp文件的目录
 -shared # 生成共享库，库文件格式为xxx.dll/xxx.so/xxx.dlyb格式的文件
 -static # 生成静态库，库文件格式为xxx.a格式的文件
 -Wl # 告诉编译器将后面的参数传递给链接器

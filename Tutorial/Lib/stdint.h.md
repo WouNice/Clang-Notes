@@ -12,18 +12,18 @@ stdint.h 定义了一些固定宽度的整数类型别名，主要有下面三�
 
 C 语言标准要求定义以下类型。
 
-- int8_t（可选）      uint8_t（可选）
-- int16_t（可选）     uint16_t（可选）
-- int32_t（可选）    uint32_t（可选）
-- int64_t（可选）     uint64_t（可选）
-- int_least8_t      uint_least8_t
-- int_least16_t     uint_least16_t
-- int_least32_t     uint_least32_t
-- int_least64_t     uint_least64_t
-- int_fast8_t       uint_fast8_t
-- int_fast16_t      uint_fast16_t
-- int_fast32_t      uint_fast32_t
-- int_fast64_t      uint_fast64_t
+- int8_t（可选）：uint8_t（可选）
+- int16_t（可选）：uint16_t（可选）
+- int32_t（可选）：uint32_t（可选）
+- int64_t（可选）：uint64_t（可选）
+- int_least8_t：uint_least8_t
+- int_least16_t：uint_least16_t
+- int_least32_t：uint_least32_t
+- int_least64_t：uint_least64_t
+- int_fast8_t：uint_fast8_t
+- int_fast16_t：uint_fast16_t
+- int_fast32_t：uint_fast32_t
+- int_fast64_t：uint_fast64_t
 
 ## 最大宽度的整数类型
 

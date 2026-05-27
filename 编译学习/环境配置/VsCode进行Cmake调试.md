@@ -41,9 +41,9 @@ TEST(HelloTest, BasicAssertions) {
 
 ## 配置VSCode调试环境
 
-您需要创建并配置.vscode/launch.json**和**.vscode/tasks.json两个文件，以设置调试会话。
+您需要创建并配置`.vscode/launch.json`和`.vscode/tasks.json`两个文件，以设置调试会话。
 
-首先在.vscode**文件夹下创建**tasks.json，这是一个例子：
+首先在`.vscode`文件夹下创建`tasks.json`，这是一个例子：
 
 ```json
 {

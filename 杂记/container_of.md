@@ -8,7 +8,7 @@ container_of宏在 Linux 内核中应用甚广：
 #define offsetof(TYPE, MEMBER) ((size_t) &((TYPE *)0)->MEMBER)
 #define  container_of(ptr, type, member) ({    \
      const typeof( ((type *)0)->member ) *__mptr = (ptr); \
-     (type *)( (char *)__mptr - offsetof(type,member) );})
+     (type *)( (char *)__mptr - offsetof(type, member) );})
 ```
 
 这个宏到底是干什么的呢？它的主要作用就是：根据结构体某一成员的地址，获取这个结构体的首地址。根据宏定义，我们可以看到，这个宏有三个参数，它们分别是：
@@ -73,7 +73,7 @@ int main(void) {
 #define offsetof(TYPE, MEMBER) ((size_t) &((TYPE *)0)->MEMBER)
 #define container_of(ptr, type, member) ({    \
         const typeof( ((type *)0)->member ) *__mptr = (ptr); \
-        (type *)( (char *)__mptr - offsetof(type,member) );})
+        (type *)( (char *)__mptr - offsetof(type, member) );})
 ```
 
 从语法角度，我们可以看到，container_of 宏的实现由一个语句表达式构成。语句表达式的值即为最后一个表达式的值：
@@ -98,7 +98,7 @@ int main(void) {
 typeof( ((type *)0)->member ) *__mptr = (ptr);
 ```
 
-我们知道，宏的参数 ptr 代表的是一个结构体成员变量 MEMBER 的地址，所以 ptr 的类型是一个指向 MEMBER 数据类型的指针，当我们使用临时指针变量 __mptr 来存储 ptr 的值时，必须确保 __mptr 的指针类型是一个指向 MEMBER 类型的指针变量。typeof( ((type *)0)->member )表达式使用 typeof 关键字，用来获取结构体成员 member 的数据类型，然后使用该类型，使用 typeof( ((type *)0)->member ) *__mptr 这行程序语句，就可以定义一个指向该类型的指针变量了。
+我们知道，宏的参数 ptr 代表的是一个结构体成员变量 MEMBER 的地址，所以 ptr 的类型是一个指向 MEMBER 数据类型的指针，当我们使用临时指针变量 `__mptr` 来存储 ptr 的值时，必须确保 `__mptr` 的指针类型是一个指向 MEMBER 类型的指针变量。`typeof( ((type *)0)->member )`表达式使用 typeof 关键字，用来获取结构体成员 member 的数据类型，然后使用该类型，使用 `typeof( ((type *)0)->member ) *__mptr` 这行程序语句，就可以定义一个指向该类型的指针变量了。
 
 还有一个需要注意的细节就是：在语句表达式的最后，因为返回的是结构体的首地址，所以数据类型还必须强制转换一下，转换为 TYPE，即返回一个指向 TYPE 结构体类型的指针，所以你会在最后一个表达之中看到一个强制类型转换(TYPE )。
 

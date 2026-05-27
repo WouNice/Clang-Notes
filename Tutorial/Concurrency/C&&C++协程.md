@@ -134,7 +134,7 @@ c++做为一个相对古老的语言，曾经是步履蹒跚，直到c++11才奋
 
 一般而言，基于汇编的上下文切换要比采用系统调用的切换更加高效，这也是为什么 phxrpc 在使用 Boost.context 时要比使用 ucontext 性能更好的原因。关于 phxrpc 和 libmill 具体的协程实现方式，以后有时间再详细介绍。
 
-### 2.1协程和线程之间区别
+### 协程和线程之间区别
 
 在了解了协程的基本概念之后，很多人可能会将它与线程混淆，毕竟它们都和程序的并发执行有关。那么，协程和线程到底有什么区别呢？接下来，我们就来深入探讨一下。
 
@@ -169,7 +169,7 @@ c++做为一个相对古老的语言，曾经是步履蹒跚，直到c++11才奋
 | 资源占用       | 多             | 少             |
 | 适用场景       | 计算密集型任务 | I/O 密集型任务 |
 
-### 2.2协程的原理
+### 协程的原理
 
 既然协程如此厉害，那么它实现的原理到底是什么呢？协程最重要的应用方式就是把线程在内核上的开销转到了应用层的开销，避开或者屏蔽（对应用者）线程操作的难度。那多线程操作的复杂性在哪儿呢？线程切换的随机性和线程Context的跟随，出入栈的保存和恢复，相关数据的锁和读写控制。这才是多线程的复杂性，如果再加异步引起的数据的非连续性和事件的非必然性操作，就更加增强了多线程遇到问题的判别和断点的准确。
 
@@ -181,7 +181,7 @@ c++做为一个相对古老的语言，曾经是步履蹒跚，直到c++11才奋
 
 只要能保证上面所说的对上下文数据的安全性保证又能够实现协程在具体线程上的操作（某一个线程上执行的所有协程是串行的），那么锁的操作，从理论上讲是不需要的（但实际开发中，因为协程的应用还是少，所以还需要具体的问题具体分析）。协程的动作集中在应用层，而把复杂的内核调度的线程屏蔽在下层框架上（或者以后会不会出现OS进行封装），从而大幅的降低了编程的难度，但却拥有了线程快速异步调用的效果。
 
-### 2.3协程实现机制
+### 协程实现机制
 
 **协程的实现有以下几种机制：**
 
@@ -214,19 +214,16 @@ void longjmp(jmp_buf envbuf, int val);
 
 jmp_buf buf;
 
-banana()
-{
+banana() {
     printf("in banana() \n");
-    longjmp(buf,1);
+    longjmp(buf, 1);
     printf("you'll never see this,because i longjmp'd");
 }
 
-main()
-{
-    if(setjmp(buf))
+int main() {
+    if (setjmp(buf))
         printf("back in main\n");
-    else
-    {
+    else {
         printf("first time through\n");
         banana();
     }
@@ -239,7 +236,7 @@ main()
 
 ## 协程核心原理机制
 
-### 3.1libco协程的创建和切换
+### libco协程的创建和切换
 
 在介绍 coroutine 的创建之前，我们先来熟悉一下 libco 中用来表示一个 coroutine 的数据结构，即定义在 co_routine_inner.h 中的 stCoRoutine_t:
 
@@ -263,7 +260,7 @@ struct stCoRoutine_t
 
 我们暂时只需要了解表示协程的最简单的几个参数，例如协程运行环境，协程的上下文环境，协程运行的函数以及运行时栈空间。后面的 stack_sp，save_size 和 save_buffer 与 libco 共享栈模式相关，有关共享栈的内容我们后续再说。
 
-### 3.2协程的执行流程
+### 协程的执行流程
 
 为了更直观地理解协程的执行流程，我们来看一个简单的 C++ 代码示例：
 
@@ -329,7 +326,7 @@ int main() {
 
 从这个示例中，我们可以清晰地看到协程的执行流程：创建协程时，协程函数并不会立即执行完，而是可以通过co_await暂停执行，将执行权交回给调用者；当调用者调用resume方法时，协程又可以从暂停的地方恢复执行。在协程暂停时，其内部的局部变量等状态信息都会被保存下来，以便恢复执行时能够继续之前的操作。
 
-### 3.3实现方式面面观
+### 实现方式面面观
 
 在 C/C++ 中，实现协程主要有以下几种常见方式：
 
@@ -351,7 +348,7 @@ setjmp函数用于保存当前的调用环境，包括寄存器的值和栈指�
 
 ## 协程的实现与原理剖析
 
-### 4.1协程的起源
+### 协程的起源
 
 **问题：协程存在的原因？协程能够解决哪些问题？**
 
@@ -366,7 +363,6 @@ while (1) {
     int nready = epoll_wait(epfd, events, EVENT_SIZE, -1);
 
     for (i = 0;i < nready;i ++) {
-
         int sockfd = events[i].data.fd;
         if (sockfd == listenfd) {
             int connfd = accept(listenfd, xxx, xxxx);
@@ -376,7 +372,6 @@ while (1) {
             ev.events = EPOLLIN | EPOLLET;
             ev.data.fd = connfd;
             epoll_ctl(epfd, EPOLL_CTL_ADD, connfd, &ev);
-
         } else {
             handle(sockfd);
         }
@@ -483,7 +478,7 @@ Sockfd管理
 
 就是采用了基于这样的思考，写了NtyCo，实现了一个IO异步操作与协程结合的组件。
 
-### 4.2协程的案例
+### 协程的案例
 
 **问题：协程如何使用？与线程使用有何区别？**
 
@@ -547,7 +542,7 @@ int nty_send(int fd, const void *buf, int length)
 int nty_close(int fd)
 ```
 
-### 4.3协程的实现之工作流程
+### 协程的实现之工作流程
 
 **问题：协程内部是如何工作呢？**
 
@@ -589,8 +584,7 @@ int nty_coroutine_create(nty_coroutine **new_co, proc_coroutine func, void *arg)
 while (1) {
     int nready = epoll_wait(epfd, events, EVENT_SIZE, -1);
 
-    for (i = 0;i < nready;i ++) {
-
+    for (i = 0; i < nready; i++) {
         int sockfd = events[i].data.fd;
         if (sockfd == listenfd) {
             int connfd = accept(listenfd, xxx, xxxx);
@@ -600,9 +594,7 @@ while (1) {
             ev.events = EPOLLIN | EPOLLET;
             ev.data.fd = connfd;
             epoll_ctl(epfd, EPOLL_CTL_ADD, connfd, &ev);
-
         } else {
-
             epoll_ctl(epfd, EPOLL_CTL_DEL, sockfd, NULL);
             recv(sockfd, buffer, length, 0);
 
@@ -633,7 +625,7 @@ while (1) {
 
 IO异步操作的上下文切换的时序图如下：
 
-![](./../../%25E5%25A5%25BD%25E6%2596%2587%25E9%259B%2586%25E9%2594%25A6/assets/img-iwi-e.jpg)
+![](assets/img-iwi-e.jpg)
 
 **(3)回调协程的子过程**
 
@@ -666,7 +658,7 @@ void nty_coroutine_init(nty_coroutine *co) {
 }
 ```
 
-### 4.4协程的实现之原语操作
+### 协程的实现之原语操作
 
 **问题：协程的内部原语操作有哪些？分别如何实现的？**
 
@@ -684,7 +676,6 @@ create：创建一个协程。
 
 ```c++
 int nty_coroutine_create(nty_coroutine **new_co, proc_coroutine func, void *arg) {
-
     assert(pthread_once(&sched_key_once, nty_coroutine_sched_key_creator) == 0);
     nty_schedule *sched = nty_coroutine_get_sched();
 
@@ -704,7 +695,6 @@ int nty_coroutine_create(nty_coroutine **new_co, proc_coroutine func, void *arg)
         return -2;
     }
 
-    //
     int ret = posix_memalign(&co->stack, getpagesize(), sched->stack_size);
     if (ret) {
         printf("Failed to allocate stack for new coroutinen");
@@ -715,11 +705,11 @@ int nty_coroutine_create(nty_coroutine **new_co, proc_coroutine func, void *arg)
     co->sched = sched;
     co->stack_size = sched->stack_size;
     co->status = BIT(NTY_COROUTINE_STATUS_NEW); //
-    co->id = sched->spawned_coroutines ++;
-co->func = func;
+    co->id = sched->spawned_coroutines++;
+    co->func = func;
 
     co->fd = -1;
-co->events = 0;
+    co->events = 0;
 
     co->arg = arg;
     co->birth = nty_coroutine_usec_now();
@@ -751,7 +741,7 @@ int nty_coroutine_resume(nty_coroutine *co)
 
 调用后该函数也不会立即返回，而是切换到运行协程实例的yield的位置。返回是在等协程相应事务处理完成后，主动yield会返回到resume的地方。
 
-### 4.5协程的实现之切换
+### 协程的实现之切换
 
 **问题：协程的上下文如何切换？切换代码如何实现？**
 
@@ -843,7 +833,7 @@ _switch的实现代码：
 
 上下文环境的切换完成。
 
-### 4.6协程的实现之定义
+### 协程的实现之定义
 
 **问题：协程如何定义? 调度器如何定义？**
 
@@ -878,7 +868,6 @@ Coroutine就是协程的相应属性，status表示协程的运行状态。sleep
 
 ```c++
 typedef struct _nty_coroutine {
-
     nty_cpu_ctx ctx;
     proc_coroutine func;
     void *arg;
@@ -892,12 +881,11 @@ typedef struct _nty_coroutine {
 
     void *stack;
 
-    RB_ENTRY(_nty_coroutine) sleep_node;
-    RB_ENTRY(_nty_coroutine) wait_node;
+    RB_ENTRY (_nty_coroutine) sleep_node;
+    RB_ENTRY (_nty_coroutine) wait_node;
 
-    TAILQ_ENTRY(_nty_coroutine) ready_next;
-    TAILQ_ENTRY(_nty_coroutine) defer_next;
-
+    TAILQ_ENTRY (_nty_coroutine) ready_next;
+    TAILQ_ENTRY (_nty_coroutine) defer_next;
 } nty_coroutine;
 ```
 
@@ -913,7 +901,7 @@ typedef struct _nty_coroutine_rbtree_wait nty_coroutine_rbtree_wait;
 
 typedef struct _nty_schedule {
     uint64_t birth;
-nty_cpu_ctx ctx;
+    nty_cpu_ctx ctx;
 
     struct _nty_coroutine *curr_thread;
     int page_size;
@@ -928,11 +916,10 @@ nty_cpu_ctx ctx;
     nty_coroutine_queue ready;
     nty_coroutine_rbtree_sleep sleeping;
     nty_coroutine_rbtree_wait waiting;
-
 } nty_schedule;
 ```
 
-### 4.7协程的实现之调度器
+### 协程的实现之调度器
 
 **问题：协程如何被调度？**
 
@@ -944,27 +931,26 @@ nty_cpu_ctx ctx;
 
 ```c++
 while (1) {
-
-        //遍历睡眠集合，将满足条件的加入到ready
-        nty_coroutine *expired = NULL;
-        while ((expired = sleep_tree_expired(sched)) != ) {
-            TAILQ_ADD(&sched->ready, expired);
-        }
-
-        //遍历等待集合，将满足添加的加入到ready
-        nty_coroutine *wait = NULL;
-        int nready = epoll_wait(sched->epfd, events, EVENT_MAX, 1);
-        for (i = 0;i < nready;i ++) {
-            wait = wait_tree_search(events[i].data.fd);
-            TAILQ_ADD(&sched->ready, wait);
-        }
-
-        // 使用resume回复ready的协程运行权
-        while (!TAILQ_EMPTY(&sched->ready)) {
-            nty_coroutine *ready = TAILQ_POP(sched->ready);
-            resume(ready);
-        }
+    //遍历睡眠集合，将满足条件的加入到ready
+    nty_coroutine *expired = NULL;
+    while ((expired = sleep_tree_expired(sched)) !=) {
+        TAILQ_ADD(&sched->ready, expired);
     }
+
+    //遍历等待集合，将满足添加的加入到ready
+    nty_coroutine *wait = NULL;
+    int nready = epoll_wait(sched->epfd, events, EVENT_MAX, 1);
+    for (i = 0; i < nready; i++) {
+        wait = wait_tree_search(events[i].data.fd);
+        TAILQ_ADD(&sched->ready, wait);
+    }
+
+    // 使用resume回复ready的协程运行权
+    while (!TAILQ_EMPTY(&sched->ready)) {
+        nty_coroutine *ready = TAILQ_POP(sched->ready);
+        resume(ready);
+    }
+}
 ```
 
 **(2)多状态运行**
@@ -973,30 +959,29 @@ while (1) {
 
 ```c++
 while (1) {
-
-        //遍历睡眠集合，使用resume恢复expired的协程运行权
-        nty_coroutine *expired = NULL;
-        while ((expired = sleep_tree_expired(sched)) != ) {
-            resume(expired);
-        }
-
-        //遍历等待集合，使用resume恢复wait的协程运行权
-        nty_coroutine *wait = NULL;
-        int nready = epoll_wait(sched->epfd, events, EVENT_MAX, 1);
-        for (i = 0;i < nready;i ++) {
-            wait = wait_tree_search(events[i].data.fd);
-            resume(wait);
-        }
-
-        // 使用resume恢复ready的协程运行权
-        while (!TAILQ_EMPTY(sched->ready)) {
-            nty_coroutine *ready = TAILQ_POP(sched->ready);
-            resume(ready);
-        }
+    //遍历睡眠集合，使用resume恢复expired的协程运行权
+    nty_coroutine *expired = NULL;
+    while ((expired = sleep_tree_expired(sched)) !=) {
+        resume(expired);
     }
+
+    //遍历等待集合，使用resume恢复wait的协程运行权
+    nty_coroutine *wait = NULL;
+    int nready = epoll_wait(sched->epfd, events, EVENT_MAX, 1);
+    for (i = 0; i < nready; i++) {
+        wait = wait_tree_search(events[i].data.fd);
+        resume(wait);
+    }
+
+    // 使用resume恢复ready的协程运行权
+    while (!TAILQ_EMPTY(sched->ready)) {
+        nty_coroutine *ready = TAILQ_POP(sched->ready);
+        resume(ready);
+    }
+}
 ```
 
-### 4.8协程性能测试
+### 协程性能测试
 
 测试环境：4台VMWare 虚拟机
 
@@ -1005,8 +990,8 @@ while (1) {
 
 操作系统：ubuntu 14.04
 
--   服务器端测试代码：[https://github.com/wangbojing/NtyCo](https://link.zhihu.com/?target=https%3A//github.com/wangbojing/NtyCo)
--   客户端测试代码：[https://github.com/wangbojing/c1000k_test/blob/master/client_mutlport_epoll.c](https://link.zhihu.com/?target=https%3A//github.com/wangbojing/c1000k_test/blob/master/client_mutlport_epoll.c)
+-   服务器端测试代码：[https://github.com/wangbojing/NtyCo](https://github.com/wangbojing/NtyCo)
+-   客户端测试代码：[https://github.com/wangbojing/c1000k_test/blob/master/client_mutlport_epoll.c](https://github.com/wangbojing/c1000k_test/blob/master/client_mutlport_epoll.c)
 -   按照每一个连接启动一个协程来测试。每一个协程栈空间 4096byte
 -   6G内存 –> 测试协程数量100W无异常。并且能够正常收发数据。
 
@@ -1015,24 +1000,23 @@ while (1) {
 由于多个协程运行于一个线程内部的，因此当创建线程中的第一个协程时，需要初始化该协程所在的环境 stCoRoutineEnv_t，这个环境是线程用来管理协程的，通过该环境，线程可以得知当前一共创建了多少个协程，当前正在运行哪一个协程，当前应当如何调度协程：
 
 ```c++
-struct stCoRoutineEnv_t
-{
-stCoRoutine_t *pCallStack[ 128 ]; // 记录当前创建的协程
-int iCallStackSize; // 记录当前一共创建了多少个协程
-stCoEpoll_t *pEpoll; // 该线程的协程调度器
-// 在使用共享栈模式拷贝栈内存时记录相应的 coroutine
-stCoRoutine_t* pending_co;
-stCoRoutine_t* occupy_co;
+struct stCoRoutineEnv_t {
+    stCoRoutine_t *pCallStack[128]; // 记录当前创建的协程
+    int iCallStackSize; // 记录当前一共创建了多少个协程
+    stCoEpoll_t *pEpoll; // 该线程的协程调度器
+    // 在使用共享栈模式拷贝栈内存时记录相应的 coroutine
+    stCoRoutine_t *pending_co;
+    stCoRoutine_t *occupy_co;
 };
 ```
 
 上述代码表明 libco 允许一个线程内最多创建 128 个协程，其中 pCallStack[iCallStackSize-1] 也就是栈顶的协程表示当前正在运行的协程。当调用函数 co_create 时，首先检查当前线程中的 coroutine env 结构是否创建。这里 libco 对于每个线程内的 stCoRoutineEnv_t 并没有使用 thread-local 的方式（例如gcc 内置的 __thread，phxrpc采用这种方式）来管理，而是预先定义了一个大的数组，并通过对应的 PID 来获取其协程环境。
 
 ```c++
-static stCoRoutineEnv_t* g_arrCoEnvPerThread[204800]
-stCoRoutineEnv_t *co_get_curr_thread_env()
-{
-return g_arrCoEnvPerThread[ GetPid() ];
+static stCoRoutineEnv_t *g_arrCoEnvPerThread[204800];
+
+stCoRoutineEnv_t *co_get_curr_thread_env() {
+    return g_arrCoEnvPerThread[GetPid()];
 }
 ```
 
@@ -1045,31 +1029,28 @@ return g_arrCoEnvPerThread[ GetPid() ];
 当初始化完成协程环境之后，调用函数 co_create_env 来创建具体的协程，该函数初始化一个协程结构 stCoRoutine_t，设置该结构中的各项字段，例如运行的函数 pfn，运行时的栈地址等等。需要说明的就是，如果使用了非共享栈模式，则需要为该协程单独申请栈空间，否则从共享栈中申请空间。栈空间表示如下：
 
 ```c++
-struct stStackMem_t
-{
-stCoRoutine_t* occupy_co; // 使用该栈的协程
-int stack_size; // 栈大小
-char* stack_bp; // 栈的指针，栈从高地址向低地址增长
-char* stack_buffer; // 栈底
+struct stStackMem_t {
+    stCoRoutine_t *occupy_co; // 使用该栈的协程
+    int stack_size; // 栈大小
+    char *stack_bp; // 栈的指针，栈从高地址向低地址增长
+    char *stack_buffer; // 栈底
 };
 ```
 
 使用 co_create 创建完一个协程之后，将调用 co_resume 来将该协程激活运行：
 
 ```c++
-void co_resume( stCoRoutine_t *co )
-{
-stCoRoutineEnv_t *env = co->env;
-// 获取当前正在运行的协程的结构
-stCoRoutine_t *lpCurrRoutine = env->pCallStack[ env->iCallStackSize - 1 ];
-if( !co->cStart )
-{
-// 为将要运行的 co 布置上下文环境
-coctx_make( &co->ctx,(coctx_pfn_t)CoRoutineFunc,co,0 );
-co->cStart = 1;
-}
-env->pCallStack[ env->iCallStackSize++ ] = co; // 设置co为运行的线程
-co_swap( lpCurrRoutine, co );
+void co_resume(stCoRoutine_t *co) {
+    stCoRoutineEnv_t *env = co->env;
+    // 获取当前正在运行的协程的结构
+    stCoRoutine_t *lpCurrRoutine = env->pCallStack[env->iCallStackSize - 1];
+    if (!co->cStart) {
+        // 为将要运行的 co 布置上下文环境
+        coctx_make(&co->ctx, (coctx_pfn_t) CoRoutineFunc, co, 0);
+        co->cStart = 1;
+    }
+    env->pCallStack[env->iCallStackSize++] = co; // 设置co为运行的线程
+    co_swap(lpCurrRoutine, co);
 }
 ```
 
@@ -1084,12 +1065,11 @@ co_swap( lpCurrRoutine, co );
 对应于 co_resume 函数，协程主动让出执行权则调用 co_yield 函数。co_yield 函数调用了 co_yield_env，将当前协程与当前线程中记录的其他协程进行切换：
 
 ```c++
-void co_yield_env( stCoRoutineEnv_t *env )
-{
-stCoRoutine_t *last = env->pCallStack[ env->iCallStackSize - 2 ];
-stCoRoutine_t *curr = env->pCallStack[ env->iCallStackSize - 1 ];
-env->iCallStackSize--;
-co_swap( curr, last);
+void co_yield_env(stCoRoutineEnv_t *env) {
+    stCoRoutine_t *last = env->pCallStack[env->iCallStackSize - 2];
+    stCoRoutine_t *curr = env->pCallStack[env->iCallStackSize - 1];
+    env->iCallStackSize--;
+    co_swap(curr, last);
 }
 ```
 
@@ -1100,8 +1080,7 @@ co_swap( curr, last);
 libco 使用结构 struct coctx_t 来表示一个协程的上下文环境：
 
 ```c++
-struct coctx_t
-{
+struct coctx_t {
     if defined(__i386__)
         void *regs[ 8 ];
     else
@@ -1125,16 +1104,15 @@ struct coctx_t
 了解了这些，我们就来看一下协程上下文环境的初始化函数 coctx_make：
 
 ```c++
-int coctx_make( coctx_t ctx, coctx_pfn_t pfn, const void s, const void *s1 )
-{
+int coctx_make(coctx_t ctx, coctx_pfn_t pfn, const void s, const void *s1) {
     char *sp = ctx->ss_sp + ctx->ss_size - sizeof(coctx_param_t);
-    sp = (char*)((unsigned long)sp & -16L);
-    coctx_param_t param = (coctx_param_t)sp ;
+    sp = (char *) ((unsigned long) sp & -16L);
+    coctx_param_t param = (coctx_param_t) sp;
     param->s1 = s;
     param->s2 = s1;
     memset(ctx->regs, 0, sizeof(ctx->regs));
-    ctx->regs[ kESP ] = (char)(sp) - sizeof(void);
-    ctx->regs[ kEIP ] = (char*)pfn;
+    ctx->regs[kESP] = (char) (sp) - sizeof(void);
+    ctx->regs[kEIP] = (char *) pfn;
     return 0;
 }
 ```
@@ -1217,15 +1195,13 @@ Epoll监听FD
 上一章节中介绍了协程可以通过函数 co_poll 来将 fd 交由 Epoll 管理，待 Epoll 的相应的事件触发时，再切换回来执行 read 或者 write 操作，从而实现由 Epoll 管理协程的功能。co_poll 函数原型如下：
 
 ```c++
-int co_poll(stCoEpoll_t *ctx, struct pollfd fds[],
-nfds_t nfds, int timeout_ms)
+int co_poll(stCoEpoll_t *ctx, struct pollfd fds[], nfds_t nfds, int timeout_ms)
 ```
 
 stCoEpoll_t 是为 libco 定制的 Epoll 相关数据结构，fds 是 pollfd 结构的文件句柄，nfds 为 fds 数组的长度，最后一个参数表示定时器时间，也就是在 timeout 毫秒之后触发处理这些文件句柄。这里可以看到，co_poll 能够同时将多个文件句柄同时加入到 Epoll 管理中。我们先看 stCoEpoll_t 结构：
 
 ```c++
-struct stCoEpoll_t
-{
+struct stCoEpoll_t {
     int iEpollFd; // Epoll 主 FD
     static const int _EPOLL_SIZE = 1024 * 10; // Epoll 可以监听的句柄总数
     struct stTimeout_t *pTimeout; // 时间轮定时器
@@ -1238,11 +1214,10 @@ struct stCoEpoll_t
 以 stTimeout_ 开头的数据结构与 libco 的定时器管理有关，我们在后面介绍。co_epoll_res 是对 Epoll 事件数据结构的封装，也就是每次触发 Epoll 事件时的返回结果，在 Unix 和 MaxOS 下，libco 将使用 Kqueue 替代 Epoll，因此这里也保留了 kevent 数据结构。
 
 ```c++
-struct co_epoll_res
-{
-int size;
-struct epoll_event *events; // for linux epoll
-struct kevent *eventlist; // for Unix or MacOs kqueue
+struct co_epoll_res {
+    int size;
+    struct epoll_event *events; // for linux epoll
+    struct kevent *eventlist; // for Unix or MacOs kqueue
 };
 ```
 
@@ -1271,29 +1246,25 @@ co_poll 的第二步，也是最关键的一步，就是将 fd 数组全部加�
 下面我们简要分析一下加入定时器的实现：
 
 ```c++
-int AddTimeout( stTimeout_t apTimeout, stTimeoutItem_t apItem,
-unsigned long long allNow )
-{
-if( apTimeout->ullStart == 0 ) // 初始化时间轮的基准时间
-{
-apTimeout->ullStart = allNow;
-apTimeout->llStartIdx = 0; // 当前时间轮指针指向数组0
-}
-// 1. 当前时间不可能小于时间轮的基准时间
-// 2. 加入的定时器的超时时间不能小于当前时间
-if( allNow < apTimeout->ullStart || apItem->ullExpireTime < allNow )
-{
-return __LINE__;
-}
-int diff = apItem->ullExpireTime - apTimeout->ullStart;
-if( diff >= apTimeout->iItemSize ) // 添加的事件不能超过时间轮的大小
-{
-return __LINE__;
-}
-// 插入到时间轮盘的指定位置
-AddTail( apTimeout->pItems +
-(apTimeout->llStartIdx + diff ) % apTimeout->iItemSize, apItem );
-return 0;
+int AddTimeout(stTimeout_t apTimeout, stTimeoutItem_t apItem, unsigned long long allNow) {
+    // 初始化时间轮的基准时间
+    if (apTimeout->ullStart == 0) {
+        apTimeout->ullStart = allNow;
+        apTimeout->llStartIdx = 0; // 当前时间轮指针指向数组0
+    }
+    // 1. 当前时间不可能小于时间轮的基准时间
+    // 2. 加入的定时器的超时时间不能小于当前时间
+    if (allNow < apTimeout->ullStart || apItem->ullExpireTime < allNow) {
+        return __LINE__;
+    }
+    int diff = apItem->ullExpireTime - apTimeout->ullStart;
+    // 添加的事件不能超过时间轮的大小
+    if (diff >= apTimeout->iItemSize) {
+        return __LINE__;
+    }
+    // 插入到时间轮盘的指定位置
+    AddTail(apTimeout->pItems + (apTimeout->llStartIdx + diff) % apTimeout->iItemSize, apItem);
+    return 0;
 }
 ```
 
@@ -1306,10 +1277,9 @@ main 协程通过调用函数 co_eventloop 来监听 Epoll 事件，并在相应
 上文中也提到，通过 epoll_wait 返回的事件都保存在 stCoEpoll_t 结构的 co_epoll_res 中。因此 co_eventloop 首先为 co_epoll_res 申请空间，之后通过一个无限循环来监听所有 coroutine 添加的所有事件：
 
 ```c++
-for(;;)
-{
-int ret = co_epoll_wait( ctx->iEpollFd,result,stCoEpoll_t::_EPOLL_SIZE, 1 );
-...
+for(;;) {
+    int ret = co_epoll_wait( ctx->iEpollFd,result,stCoEpoll_t::_EPOLL_SIZE, 1 );
+    ...
 }
 ```
 

@@ -49,13 +49,13 @@ i  = 2
 
 除了使用 typeof 获取基本数据类型，还有其它一些高级的用法：
 
-```
+```c
 typeof (int *) y;     // 把 y 定义为指向 int 类型的指针，相当于int *y;
 typeof (int)  *y;     //定义一个执行 int 类型的指针变量 y
 typeof (*x) y;        //定义一个指针 x 所指向类型 的指针变量y
 typeof (int) y[4];    //相当于定义一个：int y[4]
 typeof (*x) y[4];     //把 y 定义为指针 x 指向的数据类型的数组
-typeof (typeof (char *)[4]) y;//相当于定义字符指针数组：char *y[4];
+typeof (typeof (char *)[4]) y; //相当于定义字符指针数组：char *y[4];
 typeof(int x[4]) y;  //相当于定义：int y[4]
 ```
 
@@ -75,5 +75,3 @@ typeof(int x[4]) y;  //相当于定义：int y[4]
     (void) (&_max1 == &_max2);      \
     _max1 > _max2 ? _max1 : _max2; })
 ```
-
-## 

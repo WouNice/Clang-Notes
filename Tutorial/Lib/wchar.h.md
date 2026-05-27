@@ -125,9 +125,9 @@ int main(void) {
 
 wchar.h 也定义了一些多字节字符的专用函数。
 
-- mbsinit() 判断 mbstate_t 是否处于初始转换状态。
-- mbrlen()	给定转换状态时，计算多字节字符串的字节数，对应 mblen()。
-- mbrtowc()	给定转换状态时，将多字节字符转换为宽字符，对应 mbtowc()。
-- wctombr()	给定转换状态时，将宽字符转换为多字节字符，对应 wctomb()。
-- mbsrtowcs()	给定转换状态时，将多字节字符串转换为宽字符串，对应 mbstowcs()。
-- wcsrtombs() 给定转换状态时，将宽字符串转换为多字节字符串，对应 wcstombs()。
+- mbsinit()：判断 mbstate_t 是否处于初始转换状态。
+- mbrlen()：给定转换状态时，计算多字节字符串的字节数，对应 mblen()。
+- mbrtowc()：给定转换状态时，将多字节字符转换为宽字符，对应 mbtowc()。
+- wctombr()：给定转换状态时，将宽字符转换为多字节字符，对应 wctomb()。
+- mbsrtowcs()：给定转换状态时，将多字节字符串转换为宽字符串，对应 mbstowcs()。
+- wcsrtombs()：给定转换状态时，将宽字符串转换为多字节字符串，对应 wcstombs()。

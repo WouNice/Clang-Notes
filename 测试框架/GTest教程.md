@@ -1,220 +1,199 @@
-# GTest教程
+# GTest 教程
 
-## 什么是GTest
+## 什么是 GTest
 
-GoogleTest是由Google开发的一个C++测试框架，支持Linux、Windows和macOS操作系统，使用Bazel或CMake构建工具。
+GoogleTest 是由 Google 开发的 C++ 测试框架，支持 Linux、Windows 和 macOS 操作系统，使用 Bazel 或 CMake 构建工具。
 
--   项目主页：https://github.com/google/googletest
--   官方文档：https://google.github.io/googletest/
+- **项目主页**：<https://github.com/google/googletest>
+- **官方文档**：<https://google.github.io/googletest/>
 
 ## 源码安装
 
-```sh
+```bash
 git clone https://github.com/google/googletest.git --depth 1
 cd googletest
-mkdir build
-cd build
-cmake ..                         # 生成 Makefile
-make                             # 编译
+mkdir build && cd build
+cmake ..    # 生成 Makefile
+make        # 编译
 ```
 
->   Rocky上执行`cmake ..`遇到报错：
->
->   ```sh
->   [root@localhost build]# cmake ..
->   CMake Warning at CMakeLists.txt:50 (project):
->     VERSION keyword not followed by a value or was followed by a value that
->     expanded to nothing.
->
->
->   CMake Error at CMakeLists.txt:124 (set_target_properties):
->     set_target_properties called with incorrect number of arguments.
->
->
->   CMake Error at CMakeLists.txt:139 (set_target_properties):
->     set_target_properties called with incorrect number of arguments.
->
->
->   -- Configuring incomplete, errors occurred!
->   ```
->
->   原因是GOOGLETEST_VERSION找不到，在CmakeLists.txt设置一个属性即可
->
->   ```
->   set(GOOGLETEST_VERSION 1.17.0)
->   ```
->
->   版本号可以设置成下载的版本
+> **Rocky Linux 注意事项**：若执行 `cmake ..` 报错 `GOOGLETEST_VERSION` 未定义，在 `CMakeLists.txt` 中添加：
+> ```cmake
+> set(GOOGLETEST_VERSION 1.17.0)
+> ```
+> 版本号与下载版本保持一致。
 
-编译后可以在Cmake中设置，以下是示例：
+### CMake 集成示例
 
 ```cmake
 cmake_minimum_required(VERSION 3.10)
 project(MyProject)
 
-# 指定 gtest 的路径（如果已经安装）或构建目录路径
-set(GTEST_DIR /path/to/googletest)  # 如果已经安装，则使用 CMake 的 find_package() 查找 gtest。否则，直接指定路径。
-include_directories(${GTEST_DIR}/googletest/include ${GTEST_DIR}/googlemock/include)  # 包含 gtest 和 gmock 的头文件路径。
-link_directories(${GTEST_DIR}/googletest/build ${GTEST_DIR}/googlemock/build)  # 链接库的路径，通常是构建目录。
+# 指定 gtest 路径（已安装则用 find_package，否则直接指定路径）
+set(GTEST_DIR /path/to/googletest)
+include_directories(${GTEST_DIR}/googletest/include)
+link_directories(${GTEST_DIR}/googletest/build)
 
-add_executable(test_example test_example.cpp)  # 添加测试程序。
-target_link_libraries(test_example gtest gtest_main)  # 链接 gtest 和 gmock 库。注意这里的库名可能需要根据实际编译出的库名调整。通常在编译完成后，可以在构建目录下查看生成的库文件。
+add_executable(test_example test_example.cpp)
+target_link_libraries(test_example gtest gtest_main)
 ```
 
-## 基本概念
+## 核心概念
 
-**断言**(assertion)：检查一个条件是否为真的语句，是测试的基本组成部分。断言的结果可以是**成功**(success)、**非致命失败**(nonfatal failure)或**致命失败**(fatal failure)。如果发生了致命失败，测试将立即终止，否则继续运行。
+| 术语 | 说明 |
+|------|------|
+| **断言** (assertion) | 检查条件是否为真的语句，是测试的基本组成部分 |
+| **测试** (test) | 也叫测试用例 (test case)，使用断言验证被测试代码的行为 |
+| **测试套件** (test suite) | 包含一个或多个测试用例，用于组织测试结构 |
+| **测试夹具** (test fixture) | 当多个测试需要共用对象或子进程时使用的类 |
+| **测试程序** (test program) | 包含多个测试套件的可执行程序 |
 
-**测试**(test)：也叫**测试用例**(test case)，使用断言来验证被测试代码的行为。如果发生崩溃(coredump)或断言失败，则测试失败，否则成功。
-
-**测试套件**(test suite)：包含一个或多个测试用例，用于组织测试用例以反映被测试代码的结构。当一个测试套件中的多个测试需要共用对象或子进程时，可以将其放入一个**测试套件**(test fixture)类。
-
-**测试程序**(test program)：包含多个测试套件的可执行程序。
+断言结果分类：
+- **成功** (success)：条件为真
+- **非致命失败** (nonfatal failure)：`EXPECT_*` 断言失败，测试继续执行
+- **致命失败** (fatal failure)：`ASSERT_*` 断言失败，测试立即终止
 
 ## 快速入门
 
-下面介绍如何使用CMake运行GTest：
-
 ### 创建项目
 
-首先创建项目根目录MyProject，之后在其中创建一个名为CMakeLists.txt的文件，内容如下：
+项目结构：
+```
+MyProject/
+├── CMakeLists.txt
+└── hello_test.cpp
+```
 
+`CMakeLists.txt`：
 ```cmake
 cmake_minimum_required(VERSION 3.26.5)
 project(MyProject)
 
-# 指定 gtest 的路径（如果已经安装）或构建目录路径
-set(GTEST_DIR ../googletest/)  # 如果已经安装，则使用 CMake 的 find_package() 查找 gtest。否则，直接指定路径。
-include_directories(${GTEST_DIR}/googletest/include/gtest)  # 包含 gtest 的头文件路径。
-link_directories(${GTEST_DIR}/googletest/build)  # 链接库的路径，通常是构建目录。
+set(GTEST_DIR ../googletest/)
+include_directories(${GTEST_DIR}/googletest/include/gtest)
+link_directories(${GTEST_DIR}/googletest/build)
 
 aux_source_directory(. SRC_LIST)
-add_executable(test_example ${SRC_LIST}) # 添加测试程序。
-
-target_link_libraries(test_example gtest gtest_main)  # 链接 gtest 和 gmock 库。
+add_executable(test_example ${SRC_LIST})
+target_link_libraries(test_example gtest gtest_main)
 ```
 
-以上配置声明了对GoogleTest的依赖。
-
-### 编写测试
-
-创建一个名为hello_test.cpp的源文件，内容如下：
-
+`hello_test.cpp`：
 ```c++
 #include <gtest/gtest.h>
+
 TEST(HelloTest, BasicAssertions) {
     EXPECT_STRNE("hello", "world");
     EXPECT_EQ(7 * 6, 42);
 }
 ```
 
-该文件使用`TEST()`宏定义了测试套件`HelloTest`中的一个测试用例`BasicAssertions`，包括两个断言。
+### 构建与运行
 
-### 运行测试
+```bash
+cmake -S . -B build
+cmake --build build
+./build/test_example
+```
 
-最后构建并运行测试，在项目根目录下执行以下命令：
-
-```sh
-$ cmake -S . -B build
--- The C compiler identification is GNU 11.5.0
--- The CXX compiler identification is GNU 11.5.0
-...
--- Build files have been written to: .../build
-
-$ cmake --build build
-...
-[100%] Built target test_example
-
-$ ./build/test_example
-Running main() from /builddir/build/BUILD/googletest-release-1.11.0/googletest/src/gtest_main.cc
+输出示例：
+```
 [==========] Running 1 test from 1 test suite.
 [----------] Global test environment set-up.
 [----------] 1 test from HelloTest
 [ RUN      ] HelloTest.BasicAssertions
 [       OK ] HelloTest.BasicAssertions (0 ms)
 [----------] 1 test from HelloTest (0 ms total)
-
 [----------] Global test environment tear-down
 [==========] 1 test from 1 test suite ran. (0 ms total)
 [  PASSED  ] 1 test.
 ```
 
-其中第一行命令用于配置构建系统，解析CMakeLists.txt并生成构建文件，第二行命令用于执行编译链接操作，生成构建目标。第三行命令用于执行测试程序并报告测试结果。
+## 编写测试
 
-## 简单测试
-
-`TEST()`宏用于定义一个测试，语法如下：
+### TEST 宏
 
 ```c++
 TEST(TestSuiteName, TestName) {
-    test body
+    // test body
 }
 ```
 
-其中第一个参数是测试套件名称，第二个参数是测试用例名称，二者都必须是合法的C++标识符，并且不应该包含下划线。
+- `TestSuiteName` 和 `TestName` 必须是合法的 C++ 标识符
+- **不应包含下划线**（避免与 GoogleTest 内部命名冲突）
 
-测试体可以包含断言和任何C++语句。如果任何断言失败或者崩溃，则整个测试失败，否则成功。
+> `TEST()` 宏实际上定义了一个名为 `TestSuiteName_TestName_Test` 的类，继承自 `::testing::Test`，测试体即 `TestBody()` 成员函数。
 
-注：`TEST()`宏实际上定义了一个名为`TestSuiteName_TestName_Test`的类，该类继承了`::testing::Test`类并覆盖了成员函数`TestBody()`，测试体就是其函数体。其（简化的）定义如下：
+### 参数化测试
+
+使用 `TestWithParam` 实现参数化测试：
 
 ```c++
-#define TEST(TestSuiteName, TestName) \
-class TestSuiteName##_##TestName##_Test : public ::testing::Test { \
-private: \
-    void TestBody() override; \
-}; \
-void TestSuiteName##_##TestName##_Test::TestBody()
+#include <gtest/gtest.h>
+#include <tuple>
+
+class Adder {
+public:
+    int add(int a, int b) { return a + b; }
+};
+
+class AdderTest : public ::testing::TestWithParam<std::tuple<int, int, int>> {};
+
+TEST_P(AdderTest, AddReturnsExpectedResult) {
+    Adder adder;
+    int a, b, expected;
+    std::tie(a, b, expected) = GetParam();
+    EXPECT_EQ(expected, adder.add(a, b));
+}
+
+INSTANTIATE_TEST_SUITE_P(AdderTests, AdderTest,
+    ::testing::Values(
+        std::make_tuple(2, 3, 5),
+        std::make_tuple(-2, 1, -1),
+        std::make_tuple(0, 0, 0)
+    ));
 ```
+
+> **注意**：旧版本使用 `INSTANTIATE_TEST_CASE_P`，新版本（1.10+）推荐使用 `INSTANTIATE_TEST_SUITE_P`。
 
 ## 断言系统
 
-GoogleTest断言是类似于函数调用的宏，用于测试类或函数的行为。当断言失败时，GoogleTest将打印断言所在的源文件、行数以及错误信息。
+GoogleTest 提供丰富的断言宏，定义在 `<gtest/gtest.h>` 中。
 
-每个断言都有两种版本：`ASSERT_*`版本的失败是致命失败，`EXPECT_*`版本的失败是非致命失败。
+### 常用断言
 
-GoogleTest提供了一组断言，用于检查布尔值、使用比较运算符比较两个值、比较字符串以及浮点数等。所有断言都定义在头文件<gtest/gtest.h>中。
+| 断言 | 验证条件 |
+|------|----------|
+| `EXPECT_TRUE(condition)` | `condition` 为真 |
+| `EXPECT_FALSE(condition)` | `condition` 为假 |
+| `EXPECT_EQ(val1, val2)` | `val1 == val2` |
+| `EXPECT_NE(val1, val2)` | `val1 != val2` |
+| `EXPECT_LT(val1, val2)` | `val1 < val2` |
+| `EXPECT_LE(val1, val2)` | `val1 <= val2` |
+| `EXPECT_GT(val1, val2)` | `val1 > val2` |
+| `EXPECT_GE(val1, val2)` | `val1 >= val2` |
+| `EXPECT_STREQ(str1, str2)` | C 字符串相等 |
+| `EXPECT_STRNE(str1, str2)` | C 字符串不相等 |
+| `EXPECT_STRCASEEQ(str1, str2)` | C 字符串相等（忽略大小写） |
+| `EXPECT_STRCASENE(str1, str2)` | C 字符串不相等（忽略大小写） |
+| `EXPECT_FLOAT_EQ(val1, val2)` | 两个 `float` 近似相等 |
+| `EXPECT_DOUBLE_EQ(val1, val2)` | 两个 `double` 近似相等 |
+| `EXPECT_NEAR(val1, val2, abs_error)` | 差值不超过 `abs_error` |
+| `EXPECT_THROW(statement, exception_type)` | 抛出指定异常 |
+| `EXPECT_ANY_THROW(statement)` | 抛出任何异常 |
+| `EXPECT_NO_THROW(statement)` | 不抛出异常 |
+| `EXPECT_THAT(val, matcher)` | 满足匹配器条件 |
 
-常用断言如下（每个断言都有对应的`ASSERT_*`版本，这里省略）：
+> 每个 `EXPECT_*` 都有对应的 `ASSERT_*` 版本。`ASSERT_*` 失败时立即终止当前测试，`EXPECT_*` 失败时继续执行。
 
-| 断言                                      | 验证条件                                    |
-| ----------------------------------------- | ------------------------------------------- |
-| `EXPECT_TRUE(condition)`                  | `condition`为真                             |
-| `EXPECT_FALSE(condition)`                 | `condition`为假                             |
-| `EXPECT_EQ(val1, val2)`                   | `val1 == val2`                              |
-| `EXPECT_NE(val1, val2)`                   | `val1 != val2`                              |
-| `EXPECT_LT(val1, val2)`                   | `val1 < val2`                               |
-| `EXPECT_LE(val1, val2)`                   | `val1 <= val2`                              |
-| `EXPECT_GT(val1, val2)`                   | `val1 > val2`                               |
-| `EXPECT_GE(val1, val2)`                   | `val1 >= val2`                              |
-| `EXPECT_STREQ(str1, str2)`                | C字符串`str1`和`str2`相等                   |
-| `EXPECT_STRNE(str1, str2)`                | C字符串`str1`和`str2`不相等                 |
-| `EXPECT_STRCASEEQ(str1, str2)`            | C字符串`str1`和`str2`相等，忽略大小写       |
-| `EXPECT_STRCASENE(str1, str2)`            | C字符串`str1`和`str2`不相等，忽略大小写     |
-| `EXPECT_FLOAT_EQ(val1, val2)`             | 两个`float`值`val1`和`val2`近似相等         |
-| `EXPECT_DOUBLE_EQ(val1, val2)`            | 两个`double`值`val1`和`val2`近似相等        |
-| `EXPECT_NEAR(val1, val2, abs_error)`      | `val1`和`val2`之差的绝对值不超过`abs_error` |
-| `EXPECT_THROW(statement, exception_type)` | `statement`抛出`exception_type`类型的异常   |
-| `EXPECT_ANY_THROW(statement)`             | `statement`抛出任何类型的异常               |
-| `EXPECT_NO_THROW(statement)`              | `statement`不抛出任何异常                   |
-| `EXPECT_THAT(val, matcher)`               | `val`满足匹配器`matcher`                    |
+完整参考：[Assertions Reference](https://google.github.io/googletest/reference/assertions.html)
 
-完整参考列表：[Assertions Reference](https://google.github.io/googletest/reference/assertions.html)
+### 自定义失败信息
 
-断言宏返回一个`ostream`对象，可以使用`<<`运算符输出自定义的失败信息。例如：
-
-```
-EXPECT_TRUE(my_condition) << "My condition is not true";
-```
-
-### 二进制比较
+断言宏返回 `ostream` 对象，可使用 `<<` 输出自定义信息：
 
 ```c++
-ASSERT_EQ(5, 2+3);     // 相等
-ASSERT_NE(0, 1);       // 不等
-ASSERT_LT(3, 5);       // 小于
-ASSERT_LE(4, 4);       // 小于等于
-ASSERT_GT(10, 5);      // 大于
-ASSERT_GE(7, 7);       // 大于等于
+EXPECT_TRUE(my_condition) << "My condition is not true";
 ```
 
 ### 浮点数比较
@@ -222,14 +201,14 @@ ASSERT_GE(7, 7);       // 大于等于
 ```c++
 ASSERT_FLOAT_EQ(0.1f, 0.1f);          // 精确比较
 ASSERT_DOUBLE_EQ(0.1, 0.1);           // 双精度精确
-ASSERT_NEAR(3.14159, M_PI, 0.0001);   // 允许误差
+ASSERT_NEAR(3.14159, M_PI, 0.0001);   // 允许误差范围
 ```
 
 ### 字符串比较
 
-```c
-ASSERT_STREQ("hello", "hello");       // C字符串相等
-ASSERT_STRNE("A", "B");               // C字符串不等
+```c++
+ASSERT_STREQ("hello", "hello");       // C 字符串相等
+ASSERT_STRNE("A", "B");               // C 字符串不等
 ASSERT_STRCASEEQ("HELLO", "hello");   // 忽略大小写
 ```
 
@@ -245,23 +224,9 @@ ASSERT_ANY_THROW(throw 1);
 ASSERT_NO_THROW(int x = 5);
 ```
 
-## 事件机制
+## 测试夹具（Test Fixture）
 
-“事件” 本质是框架给你提供了一个机会, 让你能在这样的几个机会来执行你自己定制的代码, 来给测试用例准备/清理数据。gtest提供了多种事件机制，总结一下gtest的事件一共有三种：
-
-1、TestSuite事件
-
-需要写一个类，继承testing::Test，然后实现两个静态方法：SetUpTestCase 方法在第一个TestCase之前执行；TearDownTestCase方法在最后一个TestCase之后执行。
-
-2、TestCase事件
-
-是挂在每个案例执行前后的，需要实现的是SetUp方法和TearDown方法。SetUp方法在每个TestCase之前执行；TearDown方法在每个TestCase之后执行。
-
-3、全局事件
-
-要实现全局事件，必须写一个类，继承testing::Environment类，实现里面的SetUp和TearDown方法。SetUp方法在所有案例执行前执行；TearDown方法在所有案例执行后执行。
-
-## 测试套件
+当多个测试需要共享相同的配置或数据时，使用测试夹具：
 
 ```c++
 class DatabaseTest : public ::testing::Test {
@@ -295,14 +260,54 @@ TEST_F(DatabaseTest, DeleteRecord) {
 }
 ```
 
+> `TEST_F` 宏用于使用夹具的测试，第一个参数必须是夹具类名。
+
+## 事件机制
+
+事件机制提供在特定时机执行自定义代码的能力。
+
+### 三种事件类型
+
+| 事件类型 | 继承类 | 触发时机 |
+|----------|--------|----------|
+| **测试套件事件** | `testing::Test` | `SetUpTestCase`：第一个测试用例前；`TearDownTestCase`：最后一个测试用例后 |
+| **测试用例事件** | `testing::Test` | `SetUp`：每个测试用例前；`TearDown`：每个测试用例后 |
+| **全局事件** | `testing::Environment` | `SetUp`：所有案例执行前；`TearDown`：所有案例执行后 |
+
+```c++
+// 全局事件示例
+class GlobalEnvironment : public ::testing::Environment {
+public:
+    void SetUp() override {
+        // 所有测试开始前执行
+        std::cout << "Global SetUp" << std::endl;
+    }
+
+    void TearDown() override {
+        // 所有测试结束后执行
+        std::cout << "Global TearDown" << std::endl;
+    }
+};
+
+// 注册全局事件
+int main(int argc, char** argv) {
+    ::testing::InitGoogleTest(&argc, argv);
+    ::testing::AddGlobalTestEnvironment(new GlobalEnvironment);
+    return RUN_ALL_TESTS();
+}
+```
+
 ## 死亡测试
 
-这里的”死亡”指的是程序的崩溃。通常在测试的过程中，我们需要考虑各种各样的输入，有的输入可能直接导致程序崩溃，这个时候我们就要检查程序是否按照预期的方式挂掉，这也就是所谓的”死亡测试”。
+死亡测试用于验证程序是否按预期方式崩溃。
 
-死亡测试所用到的宏：
+### 死亡测试宏
 
-1.  ASSERT_DEATH(参数1，参数2)，程序挂了并且错误信息和参数2匹配，此时认为测试通过。如果参数2为空字符串，则只需要看程序挂没挂即可。
-2.  ASSERT_EXIT(参数1，参数2，参数3)，语句停止并且错误信息和被提前给的信息匹配。
+| 宏 | 说明 |
+|----|------|
+| `ASSERT_DEATH(statement, matcher)` | 程序崩溃且错误信息匹配 `matcher` |
+| `ASSERT_EXIT(statement, predicate, matcher)` | 程序退出且满足 `predicate`，错误信息匹配 `matcher` |
+| `ASSERT_DEBUG_DEATH(statement, matcher)` | 调试模式下检查死亡 |
 
 ```c++
 TEST(DeathTest, InvalidPointer) {
@@ -319,13 +324,17 @@ TEST(DeathTest, ExitCode) {
 }
 ```
 
+> `ASSERT_DEATH` 的第二个参数是正则表达式，用于匹配错误信息。若传入 `""`，则只检查程序是否崩溃，不检查错误信息。
+
 ## CMake 高级集成
 
-```c++
+### 自动下载与集成
+
+```cmake
 cmake_minimum_required(VERSION 3.14)
 project(GtestAdvancedExample)
 
-# 自动下载gtest
+# 自动下载 gtest
 include(FetchContent)
 FetchContent_Declare(
   googletest
@@ -365,7 +374,7 @@ endif()
 
 ### 测试筛选
 
-```c++
+```bash
 # 运行特定测试套件
 ./tests --gtest_filter=DatabaseTest.*
 
@@ -378,8 +387,8 @@ endif()
 
 ### 测试重复与随机化
 
-```c++
-# 重复执行100次
+```bash
+# 重复执行 100 次
 ./tests --gtest_repeat=100
 
 # 随机执行顺序
@@ -389,16 +398,28 @@ endif()
 ./tests --gtest_break_on_failure
 ```
 
+### 常用命令行选项
+
+| 选项 | 说明 |
+|------|------|
+| `--gtest_list_tests` | 列出所有测试 |
+| `--gtest_filter=pattern` | 筛选测试 |
+| `--gtest_repeat=n` | 重复执行 n 次 |
+| `--gtest_shuffle` | 随机打乱执行顺序 |
+| `--gtest_break_on_failure` | 遇到失败立即停止 |
+| `--gtest_output=xml:path` | 输出 XML 格式报告 |
+| `--gtest_color=yes` | 彩色输出 |
+
 ## 最佳实践
 
-测试命名规范
+### 测试命名规范
 
--   测试套件：被测试类名（如 DatabaseTest）
--   测试用例：行为描述（如 InsertValidRecord_Success）
+- **测试套件**：被测试类名（如 `DatabaseTest`）
+- **测试用例**：行为描述（如 `InsertValidRecord_Success`）
 
-测试组织
+### 项目组织
 
-```c++
+```
 project/
 ├── src/
 └── test/
@@ -409,17 +430,37 @@ project/
     └── performance/
 ```
 
-测试原则
+### 测试原则
 
--   每个测试验证单一行为
--   避免测试间依赖
--   使用套件减少重复代码
--   优先使用 `EXPECT_` 而非 `ASSERT_` 除非后续操作无效
+1. **单一职责**：每个测试验证单一行为
+2. **独立性**：避免测试间依赖
+3. **复用夹具**：使用 `TEST_F` 减少重复代码
+4. **优先 EXPECT**：优先使用 `EXPECT_*`，除非后续操作在失败时无意义
 
-测试覆盖率
+### 覆盖率生成
 
-```c++
-# 生成覆盖率报告
+```bash
+# 使用 gcovr 生成覆盖率报告
 gcovr -r . --exclude test/ --html-details coverage.html
 ```
 
+## 与 GMock 的关系
+
+Google Mock（gmock）已并入 Google Test 项目，二者关系如下：
+
+| 特性 | GTest | GMock |
+|------|-------|-------|
+| 核心功能 | 单元测试框架 | 模拟对象框架 |
+| 主要宏 | `TEST`, `ASSERT_*`, `EXPECT_*` | `MOCK_METHOD`, `EXPECT_CALL`, `ON_CALL` |
+| 依赖关系 | 独立使用 | 依赖 GTest |
+| 头文件 | `<gtest/gtest.h>` | `<gmock/gmock.h>` |
+
+实际项目中通常同时使用二者：
+
+```c++
+#include <gmock/gmock.h>
+#include <gtest/gtest.h>
+
+// 使用 GMock 创建模拟对象
+// 使用 GTest 编写测试和断言
+```
